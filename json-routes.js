@@ -6,6 +6,22 @@ var connectRoute = Npm.require('connect-route');
 
 JsonRoutes = {};
 
+var urlEncodedMiddleware = connect.urlencoded();
+var jsonMiddleware = connect.json();
+
+var myNext = function () {
+};
+
+var composeWithMiddlewares = function (callback) {
+  return function (req, res, next) {
+    urlEncodedMiddleware(req, res, function () {
+      jsonMiddleware(req, res, function () {
+        callback(req, res, next);
+      });
+    });
+  }
+};
+
 WebApp.connectHandlers.use(connect.query());
 
 // Handler for adding middleware before an endpoint (JsonRoutes.middleWare
@@ -66,7 +82,7 @@ JsonRoutes.add = function (method, path, handler) {
     path: path,
   });
 
-  connectRouter[method.toLowerCase()](path, function (req, res, next) {
+  connectRouter[method.toLowerCase()](path, composeWithMiddlewares(function (req, res, next) {
     // Set headers on response
     setHeaders(res, responseHeaders);
     Fiber(function () {
@@ -76,7 +92,7 @@ JsonRoutes.add = function (method, path, handler) {
         next(error);
       }
     }).run();
-  });
+  }));
 };
 
 var responseHeaders = {
