@@ -8,15 +8,17 @@ JsonRoutes = {};
 
 var urlEncodedMiddleware = connect.urlencoded();
 var jsonMiddleware = connect.json();
-
-var myNext = function () {
-};
+var queryMiddleware = connect.query();
 
 var composeWithMiddlewares = function (callback) {
   return function (req, res, next) {
+    // only execute custom middlewares at API routes
+    // required to avoid conflict with `ostrio:files`
     urlEncodedMiddleware(req, res, function () {
       jsonMiddleware(req, res, function () {
-        callback(req, res, next);
+        queryMiddleware(req, res, function () {
+          callback(req, res, next);
+        });
       });
     });
   }

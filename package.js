@@ -1,6 +1,6 @@
 Package.describe({
   name: 'jss:json-routes',
-  version: '2.2.1',
+  version: '2.3.0',
 
   // Brief, one-line summary of the package.
   summary: 'The simplest way to define server-side routes that return JSON',
