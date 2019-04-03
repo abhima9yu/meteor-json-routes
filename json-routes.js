@@ -77,6 +77,10 @@ JsonRoutes.add = function (method, path, handler) {
   if (path[0] !== '/') {
     path = '/' + path;
   }
+  console.log('********')
+  console.log(Meteor.WEB_API_NAMESPACE)
+
+  path = Meteor.WEB_API_NAMESPACE + path
 
   // Add to list of known endpoints
   JsonRoutes.routes.push({
