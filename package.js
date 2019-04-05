@@ -1,6 +1,6 @@
 Package.describe({
-  name: 'jss:json-routes',
-  version: '2.3.0',
+  name: 'abhima9yu:json-routes',
+  version: '3.0.0',
 
   // Brief, one-line summary of the package.
   summary: 'The simplest way to define server-side routes that return JSON',
@@ -13,22 +13,29 @@ Package.describe({
   documentation: 'README.md',
 });
 
+//npm dependencies shown below should be installed in the main app
 Npm.depends({
-  connect: '2.30.2',
-  'connect-route': '0.1.5',
+  connect: '2.30.2'
+  //'connect-route': '0.1.5',
+  //'body-parser': '1.18.3',
+  //'qs': '6.7.0',
+  //'pluralize': '7.0.0',
+  //'lodash': '4.17.11'
 });
 
 Package.onUse(function (api) {
   api.versionsFrom('1.0');
 
   api.use([
-    'underscore',
     'webapp',
+    'meteor',
+    'coffeescript@2.0.0',
+    'ecmascript@0.10.0'
   ], 'server');
 
   api.addFiles([
-    'json-routes.js',
-    'middleware.js',
+    'json-routes.coffee',
+    'middleware.coffee',
   ], 'server');
 
   api.export([
