@@ -34,7 +34,7 @@ Package.onUse(function (api) {
   ], 'server');
 
   api.addFiles([
-    'json-routes.coffee',
+    'jsonRoutes.coffee',
     'middleware.coffee',
   ], 'server');
 
