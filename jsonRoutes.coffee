@@ -1,13 +1,11 @@
 import Fiber from 'fibers'
 import connect from 'connect'
 import connectRoute from 'connect-route'
-import pluralize from 'pluralize'
 import _ from 'lodash'
 import { Meteor } from 'meteor/meteor'
 import bodyParser from 'body-parser'
 import qs from 'qs'
 import parseUrl from "parse-url"
-import { T9n } from 'meteor-accounts-t9n'
 
 setHeaders = (res, headers) ->
   _.each headers, (value, key) ->
@@ -24,22 +22,6 @@ writeJsonToBody = (res, json) ->
   return
 
 JsonRoutes = {}
-
-JsonRoutes.errors =
-  invalidTokenError: (req, res, next) ->
-    error = new Meteor.Error("authenticationFailure", T9n.get('errors.authenticationFailure'))
-    error.statusCode = Meteor.ERROR_CODES.authenticationFailure
-    throw error
-
-  badRequestError: (req, res, next) ->
-    error = new Meteor.Error("badRequest", T9n.get('errors.badRequest'))
-    error.statusCode = Meteor.ERROR_CODES.badRequest
-    throw error
-
-  recordNotFoundError: (req, res, next) ->
-    error = new Meteor.Error("recordNotFound", T9n.get('errors.recordNotFound'))
-    error.statusCode = Meteor.ERROR_CODES.recordNotFound
-    throw error
 
 urlEncodedMiddleware = bodyParser.urlencoded({ extended: true })
 jsonMiddleware = bodyParser.json()
@@ -128,116 +110,6 @@ JsonRoutes.add = (method, path, handler) ->
     return
   )
   return
-
-###
-# Code to add crud routes start here
-###
-
-JsonRoutes.getRestActionsToBeAdded = (options = {}) ->
-  allRestActions = ['index', 'create', 'show', 'update', 'destroy']
-  if options.pickRoutes?.length > 0
-    _.intersection(allRestActions, options.pickRoutes)
-  else if options.omitRoutes?.length > 0
-    _.difference(allRestActions, options.omitRoutes)
-  else
-    allRestActions
-
-#for collection RestfulRoute it will return restfulRoutes
-restFulRouteNameForCollection = (collection) ->
-  pluralize(_.camelCase(collection._name))
-
-JsonRoutes.indexRouteObject = (collection) ->
-  method: 'get'
-  path: '/' + restFulRouteNameForCollection(collection)
-  callback: (req, res, next) =>
-    #TODO move this in a mixin as a collection pagination helper
-    limit = parseInt(req.query.pageSize) || 0
-    skip = (limit) * ((parseInt(req.query.pageNumber) || 1) - 1)
-    entities = collection.find({enterpriseId: req.headers['enterprise-id']}, {limit: limit, skip: skip}).fetch()
-    if entities
-      @sendResult res, data: entities
-    else
-      @errors.badRequestError req, res, next
-
-JsonRoutes.createRouteObject = (collection) ->
-  method: 'post'
-  path: '/' + restFulRouteNameForCollection(collection)
-  callback: (req, res, next) =>
-    bodyParams = req.body
-    bodyParams.enterpriseId = req.headers['enterprise-id']
-    entityId = collection.insert(bodyParams)
-    entity = collection.findOne(entityId)
-    if entity
-      @sendResult res, data: entity
-    else
-      @errors.badRequestError req, res, next
-
-JsonRoutes.showRouteObject = (collection) ->
-  method: 'get'
-  path: '/' + restFulRouteNameForCollection(collection) + '/:id'
-  callback: (req, res, next) =>
-    entity = collection.findOne(req.params.id)
-    if entity
-      @sendResult res, data: entity
-    else
-      @errors.recordNotFoundError req, res, next
-
-JsonRoutes.updateRouteObject = (collection) ->
-  method: 'put'
-  path: '/' + restFulRouteNameForCollection(collection) + '/:id'
-  callback: (req, res, next) =>
-    bodyParams = req.body
-    #TODO add check for acceptable fields
-    #added this to prevent user from changing enterprise id of the record.
-    bodyParams.enterpriseId = req.headers['enterprise-id']
-    entityIsUpdated = collection.update(req.params.id, {$set: req.body})
-    if entityIsUpdated
-      entity = collection.findOne(req.params.id)
-      @sendResult res, data: entity
-    else
-      @errors.recordNotFoundError req, res, next
-
-JsonRoutes.destroyRouteObject = (collection) ->
-  method: 'delete'
-  path: '/' + restFulRouteNameForCollection(collection) + '/:id'
-  callback: (req, res, next) =>
-    if collection.remove(req.params.id)
-      @sendResult res, data: 'Record deleted successfully'
-    else
-      @errors.recordNotFoundError req, res, next
-
-JsonRoutes.addCrudRoute = (crudRouteObject) ->
-  @add crudRouteObject.method, crudRouteObject.path, crudRouteObject.callback
-
-JsonRoutes.crudRoutes =
-  index:
-    add: (collection) -> JsonRoutes.addCrudRoute(JsonRoutes.indexRouteObject(collection))
-  create:
-    add: (collection) -> JsonRoutes.addCrudRoute(JsonRoutes.createRouteObject(collection))
-  show:
-    add: (collection) -> JsonRoutes.addCrudRoute(JsonRoutes.showRouteObject(collection))
-  update:
-    add: (collection) -> JsonRoutes.updateRouteObject(JsonRoutes.showRouteObject(collection))
-  destroy:
-    add: (collection) -> JsonRoutes.destroyRouteObject(JsonRoutes.showRouteObject(collection))
-
-###*
-# Adds crud routes for the passed collection
-#
-# @param {Object} collection Meteor Collection Object
-# @param {Object} [options]
-# @param {Array} [options.pickRoutes] any route from this array ['index', 'create', 'show', 'update', 'destroy'] can be picked.
-# @param {Object} [options.omitRoutes] opposite of pickActions. pickActions will have precedence over omit routes
-# @param {Boolean} [options.pagination] default true. When set true pagination will be added to the index route.
-###
-
-JsonRoutes.addCrudRoutesForCollection = (collection, options = {}) ->
-  @crudRoutes[actionToBeAdded].add(collection) for actionToBeAdded in @getRestActionsToBeAdded(options)
-
-###
-# Code to add crud routes ends here
-###
-
 
 responseHeaders =
   'Cache-Control': 'no-store'
