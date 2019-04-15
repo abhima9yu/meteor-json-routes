@@ -92,7 +92,6 @@ JsonRoutes.add = (method, path, handler) ->
   # Make sure path starts with a slash
   if path[0] != '/'
     path = '/' + path
-  path = Meteor.WEB_API_NAMESPACE + path
   # Add to list of known endpoints
   JsonRoutes.routes.push
     method: method
