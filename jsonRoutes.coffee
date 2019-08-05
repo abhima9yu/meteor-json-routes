@@ -28,7 +28,7 @@ jsonMiddleware = bodyParser.json()
 queryMiddleware = (req, res, next) ->
   if (!req.query)
     if ~req.url.indexOf('?')
-      req.query = qs.parse(parseurl(req).query, { allowDots: false, allowPrototypes: true })
+      req.query = qs.parse(parseUrl(req).query, { allowDots: false, allowPrototypes: true })
     else
       req.query = {}
   next()
